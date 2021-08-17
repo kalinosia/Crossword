@@ -3,6 +3,7 @@ import sys
 from crossword import *
 import queue
 import math
+import time
 
 class CrosswordCreator():
 
@@ -15,6 +16,7 @@ class CrosswordCreator():
             var: self.crossword.words.copy()
             for var in self.crossword.variables
         }
+        self.copy_of_domains = dict()  # = domains  # ----------------------------- My copy of domains
 
     def letter_grid(self, assignment):
         """
@@ -92,6 +94,7 @@ class CrosswordCreator():
         """
         self.enforce_node_consistency()
         self.ac3()
+        self.copy_of_domains = self.domains
         return self.backtrack(dict())
 
     def enforce_node_consistency(self):
@@ -165,27 +168,19 @@ class CrosswordCreator():
         print("BeFORE: ",self.domains)
         for i in self.domains:
             print(i, "--->",self.domains[i])
-        # ''' #;3nfinfvljkrnvkjrcf
-        #jkefnwlvjn;wfvn;
-        # fwljkvnckfnc.
-        # dfwjncd
-        # DO QUEUE A) arcs is queue B) arcs is list, q is queue
-        if arcs is None or not arcs:
-            list_before_queue = []
+        # '''
+        # DO QUEUE A) arcs arcs is list, q is queue
+        if arcs is None:
+            arcs = []
             for keyx in self.domains:
                 for keyy in self.domains:
                     if keyx != keyy:
-                        list_before_queue.append((keyx, keyy))
-        else:
-            list_before_queue = []
-            # arcs is dict
-            for keyx in arcs:
-                for keyy in arcs:
-                    if keyx != keyy:
-                        list_before_queue.append((keyx, keyy))
+                        arcs.append((keyx, keyy))
+        elif not arcs:
+            return True #????????????????????????????????????????????????????
 
         q = queue.Queue()
-        for tuple in list_before_queue:
+        for tuple in arcs:
             q.put(tuple)
         # print("LIST QUEUE", list(q.queue))
 
@@ -372,26 +367,18 @@ class CrosswordCreator():
         """
         Get assignment -> do a queue (X,Y). Every key in assignment -> Y
 
-        function Revise(csp, X, Y):
-            revised = false
-            for x in X.domain:
-                if no y in Y.domain satisfies constraint for (X,Y):
-                    delete x from X.domain
-                    revised = true
-            return revised
-
-        function AC-3(csp):
-            queue = all arcs in csp
-            while queue non-empty:
-                (X, Y) = Dequeue(queue)
-                if Revise(csp, X, Y):
-                    if size of X.domain == 0:
-                        return false
-                    for each Z in X.neighbors - {Y}:
-                        Enqueue(queue, (Z,X))
-            return true
-
+        def ac3(self, arcs=None):
+        This function takes an optional argument called arcs, representing an initial list of arcs to process.
         """
+
+        arcs = []
+        for key in assignment:
+            for neighbor in self.crossword.neighbors(key):
+                if neighbor in assignment:
+                    continue
+                arcs.append((neighbor, key))
+
+        return self.ac3(arcs)
 
 
     def backtrack(self, assignment):
@@ -429,19 +416,21 @@ class CrosswordCreator():
         for value in self.order_domain_values(var, assignment):
             assignment[var] = value
             if self.consistent(assignment):
-                inferences=self.ac3(assignment)
 
+                if not self.Inference(assignment):
+                    self.domains=self.copy_of_domains
                 result = self.backtrack(assignment)
                 if result is not None:
                     return result
+            self.domains = self.copy_of_domains
             assignment.pop(var)
         # print("BEFORE BACKTRACK IS NONE ",assignment)
-        # self.print(assignment)
+        self.print(assignment)
         return None
 
 
 def main():
-
+    start_time = time.time()
     # Check usage
     if len(sys.argv) not in [3, 4]:
         sys.exit("Usage: python generate.py structure words [output]")
@@ -464,6 +453,7 @@ def main():
         if output:
             creator.save(assignment, output)
 
+    print("--- %s seconds ---" % (time.time() - start_time))
 
 if __name__ == "__main__":
     main()

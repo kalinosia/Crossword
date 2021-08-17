@@ -105,7 +105,7 @@ class CrosswordCreator():
             # print(key, "---->")
             # print(self.domains[key])
             # type(key) -> <class 'crossword.Variable'>
-            words_to_delete=[]
+            words_to_delete = []
             for word in self.domains[key]:
                 if len(word) != key.length:
                     words_to_delete.append(word)
@@ -134,7 +134,7 @@ class CrosswordCreator():
             word_for_this_value_exist = False
             for word in self.domains[y]:
                 if value[self.crossword.overlaps[x, y][0]] == word[self.crossword.overlaps[x, y][1]]:
-                    word_for_this_value_exist=True
+                    word_for_this_value_exist = True
             if not word_for_this_value_exist:
                 values_to_delete.append(value)
 
@@ -165,17 +165,28 @@ class CrosswordCreator():
         print("BeFORE: ",self.domains)
         for i in self.domains:
             print(i, "--->",self.domains[i])
-        # '''
+        # ''' #;3nfinfvljkrnvkjrcf
+        #jkefnwlvjn;wfvn;
+        # fwljkvnckfnc.
+        # dfwjncd
         # DO QUEUE A) arcs is queue B) arcs is list, q is queue
-        if arcs is None:
-            arcs = []
+        if arcs is None or not arcs:
+            list_before_queue = []
             for keyx in self.domains:
                 for keyy in self.domains:
                     if keyx != keyy:
-                        arcs.append((keyx, keyy))
+                        list_before_queue.append((keyx, keyy))
+        else:
+            list_before_queue = []
+            # arcs is dict
+            for keyx in arcs:
+                for keyy in arcs:
+                    if keyx != keyy:
+                        list_before_queue.append((keyx, keyy))
+
         q = queue.Queue()
-        for arc in arcs:
-            q.put(arc)
+        for tuple in list_before_queue:
+            q.put(tuple)
         # print("LIST QUEUE", list(q.queue))
 
         #  AC-3 ALGORITHM
@@ -357,6 +368,31 @@ class CrosswordCreator():
         sorted_dict = sorted(num_neig_dict.items(), key=lambda x: x[1], reverse=True)
         return sorted_dict[0][0]
 
+    def Inference(self, assignment):
+        """
+        Get assignment -> do a queue (X,Y). Every key in assignment -> Y
+
+        function Revise(csp, X, Y):
+            revised = false
+            for x in X.domain:
+                if no y in Y.domain satisfies constraint for (X,Y):
+                    delete x from X.domain
+                    revised = true
+            return revised
+
+        function AC-3(csp):
+            queue = all arcs in csp
+            while queue non-empty:
+                (X, Y) = Dequeue(queue)
+                if Revise(csp, X, Y):
+                    if size of X.domain == 0:
+                        return false
+                    for each Z in X.neighbors - {Y}:
+                        Enqueue(queue, (Z,X))
+            return true
+
+        """
+
 
     def backtrack(self, assignment):
         """
@@ -368,57 +404,39 @@ class CrosswordCreator():
         If no assignment is possible, return None.
         """
 
-        # print(len(self.crossword.words))
-        print("BACKTRACK")
+        # FUNCTION BACKTRACK
         '''
-        returning=dict()
-        #self.print(assignment)
-        for key in self.domains:
-            if len(self.domains[key])<1:
-                return None
-            #''
-            elif len(self.domains[key])>1:
-                returning[key]=self.domains[key]
-            
-            if len(self.domains[key])==1:
-                returning[key]=self.domains[key]
-            ''
-
-        while not self.assignment_complete(returning):
-            print("WHILEEEE")
-            key=self.select_unassigned_variable(returning)
-            if len(self.domains[key]) > 1: #??
-                words=self.order_domain_values(key, returning)
-                for word in words:
-                    returning[key]=word
-                    if self.consistent(returning):
-                        break
-            else:
-                returning[key]=list(self.domains[key])[0]
-
-        print("END WHILE\n", returning)
-        for key in self.domains:
-            print(key,"-->",returning[key])
-        if self.assignment_complete(returning) :
-            return returning
-        # raise NotImplementedError
+        if self.assignment_complete(assignment):
+            return assignment
+        var = self.select_unassigned_variable(assignment)
+        # print("VAR: ", var, " --> ", len(self.domains[var]))
+        for value in self.order_domain_values(var, assignment):
+            assignment[var]=value
+            if self.consistent(assignment):  # if value consistent with assignment
+                result = self.backtrack(assignment)
+                if result is not None:
+                    return result
+            assignment.pop(var)  # if value NOT consistent with assignment
+        # print("BEFORE BACKTRACK IS NONE ",assignment)
+        self.print(assignment)
+        return None
         '''
+        # BACKTRACK WITH INFERENCE
 
         if self.assignment_complete(assignment):
             return assignment
         var = self.select_unassigned_variable(assignment)
-        print("VAR: ", var)
         for value in self.order_domain_values(var, assignment):
-            assignment[var]=value
+            assignment[var] = value
             if self.consistent(assignment):
-                #print("before RESUKT")
-                result = self.backtrack(assignment)
+                inferences=self.ac3(assignment)
 
+                result = self.backtrack(assignment)
                 if result is not None:
                     return result
-                assignment.pop(var)
-        print("BEFORE BACKTRACK IS NONE ",assignment)
-        self.print(assignment)
+            assignment.pop(var)
+        # print("BEFORE BACKTRACK IS NONE ",assignment)
+        # self.print(assignment)
         return None
 
 
